@@ -38,6 +38,7 @@ venv.bak/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb
 
 # pyenv
 .python-version
@@ -59,6 +60,7 @@ dmypy.json
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
 
 # Celery
 celerybeat-schedule
@@ -91,6 +93,7 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+*.mongodb
 
 # OS
 .DS_Store
@@ -98,6 +101,38 @@ logs/
 ._*
 .Spotlight-V100
 .Trashes
+Thumbs.db
+
+# Model downloads (transformers, torch - large files)
+.cache/huggingface/
+models/
+pretrained_models/
+*.bin
+*.pt
+
+# Secrets & credentials
+secrets.yaml
+credentials.json
+.credentials
+*_key.txt
+*_token.txt
+config/secrets/
+
+# Package files
+*.whl
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+
+# Cache
+.cache/
+
+# Docker (if applicable)
+.dockerignore
+docker-compose.override.yml
+
 ehthumbs.db
 Thumbs.db
 
