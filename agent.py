@@ -8,7 +8,9 @@ from summarization import summarize_results
 load_dotenv()
 
 # Determine which LLM to use
-USE_LOCAL_MODEL = os.getenv("USE_LOCAL_MODEL", "false").lower() == "true"
+# Default to Ollama (local model), set USE_GEMINI=true to use Gemini instead
+USE_GEMINI = os.getenv("USE_GEMINI", "false").lower() == "true"
+USE_LOCAL_MODEL = not USE_GEMINI  # Use Ollama by default
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")  # Best balance: fast, high quality, supports tools
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
@@ -31,7 +33,7 @@ else:
     if not api_key:
         raise RuntimeError(
             "Google Gemini API key missing. Set GOOGLE_API_KEY or GEMINI_API_KEY environment variable, "
-            "or use local model: export USE_LOCAL_MODEL=true"
+            "or use local model: export USE_GEMINI=false (Ollama is default)"
         )
     
     print(f"🌐 Using Gemini API: {os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')}")
@@ -105,15 +107,16 @@ agent_executor = create_agent(
     system_prompt=system_prompt
 )
 
-# --- Rate limiting + caching wrapper to avoid exceeding Gemini quota ---
+# --- Rate limiting + caching wrapper (only for Gemini API) ---
 import time
 import threading
 import json
 import logging
 from collections import deque
 
+# Rate limiting only applies to Gemini API, not Ollama
 # stricter default rate limit (user requested 2-3 max)
-RATE_LIMIT = int(os.getenv("GEMINI_MAX_RPM", "2"))  # requests per minute
+RATE_LIMIT = int(os.getenv("GEMINI_MAX_RPM", "2")) if USE_GEMINI else 999  # requests per minute (unlimited for Ollama)
 MAX_WAIT_SECONDS = int(os.getenv("GEMINI_MAX_WAIT", "30"))
 CACHE_TTL = int(os.getenv("GEMINI_CACHE_TTL", "600"))  # seconds
 
@@ -211,21 +214,22 @@ def invoke_agent(payload):
                 _metrics["cache_misses"] += 1
             logger.info("Cache miss for key")
 
-    # Enforce rate limit
+    # Enforce rate limit (only for Gemini API)
     wait = 0
-    with _timestamps_lock:
-        # prune old timestamps
-        while _call_timestamps and now - _call_timestamps[0] > 60:
-            _call_timestamps.popleft()
-        if len(_call_timestamps) >= RATE_LIMIT:
-            oldest = _call_timestamps[0]
-            wait = 60 - (now - oldest)
-            if wait > MAX_WAIT_SECONDS:
-                with _metrics_lock:
-                    _metrics["errors"] += 1
-                raise RuntimeError(
-                    f"Rate limit exceeded ({RATE_LIMIT}/min). Try again later or increase GEMINI_MAX_RPM."
-                )
+    if USE_GEMINI:  # Only apply rate limiting for Gemini
+        with _timestamps_lock:
+            # prune old timestamps
+            while _call_timestamps and now - _call_timestamps[0] > 60:
+                _call_timestamps.popleft()
+            if len(_call_timestamps) >= RATE_LIMIT:
+                oldest = _call_timestamps[0]
+                wait = 60 - (now - oldest)
+                if wait > MAX_WAIT_SECONDS:
+                    with _metrics_lock:
+                        _metrics["errors"] += 1
+                    raise RuntimeError(
+                        f"Rate limit exceeded ({RATE_LIMIT}/min). Try again later or increase GEMINI_MAX_RPM."
+                    )
 
     if wait > 0:
         with _metrics_lock:
