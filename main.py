@@ -18,6 +18,7 @@ logger.setLevel(logging.INFO)
 from scheduler import start_scheduler
 from email_service import send_email
 from db import opportunity_exists, save_opportunity
+from utils import sanitize_for_json
 
 load_dotenv()
 
@@ -63,7 +64,21 @@ def search_opportunities(data: JobRequest = Body(default=None)):
         logger.error("invoke_agent failed: %s", str(e))
         raise
 
-    opportunities = json.loads(result["output"])
+    # Normalize/parse agent output safely
+    try:
+        if isinstance(result, dict) and "output" in result:
+            raw = result["output"]
+            if isinstance(raw, str):
+                opportunities = json.loads(raw)
+            else:
+                opportunities = sanitize_for_json(raw)
+        elif isinstance(result, str):
+            opportunities = json.loads(result)
+        else:
+            opportunities = sanitize_for_json(result)
+    except Exception as e:
+        logger.error("Failed to parse or sanitize agent output: %s", str(e))
+        raise
     # Log titles and some metadata for visibility
     for i, opp in enumerate(opportunities[:10], start=1):
         title = opp.get("title") or opp.get("job_title") or "(no title)"

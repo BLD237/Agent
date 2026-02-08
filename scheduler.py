@@ -7,6 +7,7 @@ import pytz
 from agent import invoke_agent, preview_search
 from email_service import send_email
 from job_config import DAILY_JOB_CONFIG, AGENT_PROMPT, SEARCH_QUERY, SEARCH_MAX_RESULTS
+from utils import sanitize_for_json
 from db import opportunity_exists, save_opportunity
 
 logger = logging.getLogger("agent")
@@ -55,7 +56,8 @@ def daily_job_search():
         return
 
     logger.info("Sending email with %d new opportunities", len(new_items))
-    email_body = json.dumps(new_items, indent=2)
+    safe_items = sanitize_for_json(new_items)
+    email_body = json.dumps(safe_items, indent=2, ensure_ascii=False)
 
     for email in DAILY_JOB_CONFIG["emails"]:
         send_email(

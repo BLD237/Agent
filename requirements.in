@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+langchain
+langchain-google-genai
+langchain-community
+langchain-text-splitters
+tavily-python
+apscheduler
+pytz
+python-dotenv
+pymongo
+pydantic
+google-genai
+transformers
+torch
+tenacity

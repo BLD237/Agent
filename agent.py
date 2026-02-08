@@ -1,6 +1,5 @@
 import os
 
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain.agents import create_agent
 from dotenv import load_dotenv
@@ -8,18 +7,40 @@ from summarization import summarize_results
 
 load_dotenv()
 
-api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-if not api_key:
-    raise RuntimeError(
-        "Google Gemini API key missing. Set GOOGLE_API_KEY or GEMINI_API_KEY environment variable, "
-        "or pass `api_key` to ChatGoogleGenerativeAI."
-    )
+# Determine which LLM to use
+USE_LOCAL_MODEL = os.getenv("USE_LOCAL_MODEL", "false").lower() == "true"
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")  # Best balance: fast, high quality, supports tools
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-llm = ChatGoogleGenerativeAI(
-    model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
-    temperature=0,
-    api_key=api_key,
-)
+if USE_LOCAL_MODEL:
+    # Use local Ollama model (no API key needed)
+    from langchain_ollama import ChatOllama
+    
+    print(f"🚀 Using local Ollama model: {OLLAMA_MODEL} at {OLLAMA_BASE_URL}")
+    
+    llm = ChatOllama(
+        model=OLLAMA_MODEL,
+        base_url=OLLAMA_BASE_URL,
+        temperature=0,
+    )
+else:
+    # Use Google Gemini API
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "Google Gemini API key missing. Set GOOGLE_API_KEY or GEMINI_API_KEY environment variable, "
+            "or use local model: export USE_LOCAL_MODEL=true"
+        )
+    
+    print(f"🌐 Using Gemini API: {os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')}")
+    
+    llm = ChatGoogleGenerativeAI(
+        model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        temperature=0,
+        api_key=api_key,
+    )
 
 search_tool = TavilySearchResults(max_results=6)
 

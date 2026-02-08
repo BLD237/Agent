@@ -1,8 +1,11 @@
 import smtplib
 import os
 import json
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+logger = logging.getLogger("agent.email")
 
 
 def _render_html_from_json(items):
@@ -51,41 +54,70 @@ def _render_html_from_json(items):
     return header + items_html + footer
 
 
-def send_email(subject: str, body: str, to_email: str):
-    # Create message container (multipart/alternative)
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = os.getenv("SMTP_EMAIL")
-    msg["To"] = to_email
+def send_email(subject: str, body: str, to_email: str = None, recipient: str = None, smtp_config: dict | None = None) -> bool:
+  """Send an email and return True on success, False on failure.
 
-    # Plain text fallback
-    plain_part = MIMEText(body, "plain", "utf-8")
+  Accepts either `to_email` or `recipient` for destination and an optional
+  `smtp_config` dict with keys: server, port, sender, password.
+  """
+  dest = to_email or recipient
+  if not dest:
+    logger.error("No recipient provided to send_email")
+    return False
 
-    # Try to parse JSON body (expected from the app) and render HTML
-    html_part = None
-    try:
-        parsed = json.loads(body)
-        if isinstance(parsed, list):
-            html = _render_html_from_json(parsed)
-            html_part = MIMEText(html, "html", "utf-8")
-        else:
-            # Not a list: include pretty-printed JSON in HTML
-            pretty = json.dumps(parsed, indent=2)
-            html = f"<pre>{pretty}</pre>"
-            html_part = MIMEText(html, "html", "utf-8")
-    except Exception:
-        # If body isn't JSON, wrap it in simple HTML
-        safe = body.replace("\n", "<br />")
-        html = f"<div>{safe}</div>"
-        html_part = MIMEText(html, "html", "utf-8")
+  # Create message container (multipart/alternative)
+  msg = MIMEMultipart("alternative")
+  msg["Subject"] = subject
 
-    msg.attach(plain_part)
-    msg.attach(html_part)
+  # Determine SMTP configuration (prefer provided smtp_config)
+  if smtp_config:
+    smtp_server = smtp_config.get("server") or smtp_config.get("host") or os.getenv("SMTP_HOST")
+    smtp_port = int(smtp_config.get("port", os.getenv("SMTP_PORT", 587)))
+    smtp_sender = smtp_config.get("sender") or os.getenv("SMTP_EMAIL")
+    smtp_password = smtp_config.get("password") or os.getenv("SMTP_PASSWORD")
+  else:
+    smtp_server = os.getenv("SMTP_HOST")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_sender = os.getenv("SMTP_EMAIL")
+    smtp_password = os.getenv("SMTP_PASSWORD")
 
-    with smtplib.SMTP(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT"))) as server:
-        server.starttls()
-        server.login(
-            os.getenv("SMTP_EMAIL"),
-            os.getenv("SMTP_PASSWORD")
-        )
-        server.send_message(msg)
+  if not smtp_sender or not smtp_password or not smtp_server:
+    logger.error("SMTP configuration incomplete: sender=%s server=%s", smtp_sender, smtp_server)
+    return False
+
+  msg["From"] = smtp_sender
+  msg["To"] = dest
+
+  # Plain text fallback
+  plain_part = MIMEText(body, "plain", "utf-8")
+
+  # Try to parse JSON body (expected from the app) and render HTML
+  html_part = None
+  try:
+    parsed = json.loads(body)
+    if isinstance(parsed, list):
+      html = _render_html_from_json(parsed)
+      html_part = MIMEText(html, "html", "utf-8")
+    else:
+      # Not a list: include pretty-printed JSON in HTML
+      pretty = json.dumps(parsed, indent=2)
+      html = f"<pre>{pretty}</pre>"
+      html_part = MIMEText(html, "html", "utf-8")
+  except Exception:
+    # If body isn't JSON, wrap it in simple HTML
+    safe = body.replace("\n", "<br />")
+    html = f"<div>{safe}</div>"
+    html_part = MIMEText(html, "html", "utf-8")
+
+  msg.attach(plain_part)
+  msg.attach(html_part)
+
+  try:
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+      server.starttls()
+      server.login(smtp_sender, smtp_password)
+      server.send_message(msg)
+    return True
+  except Exception as e:
+    logger.exception("Failed to send email: %s", str(e))
+    return False
