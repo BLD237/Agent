@@ -15,10 +15,8 @@ if not logger.handlers:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
-from scheduler import start_scheduler
+from scheduler import start_scheduler, daily_job_search
 from email_service import send_email
-from db import opportunity_exists, save_opportunity
-from utils import sanitize_for_json
 
 load_dotenv()
 
@@ -119,3 +117,22 @@ def preview_search_endpoint():
     except Exception as e:
         logger.error("preview_search_endpoint failed: %s", str(e))
         raise
+
+
+@app.post("/test-scheduler")
+def test_scheduler():
+    """Test endpoint to trigger the daily job search immediately."""
+    logger.info("Test scheduler endpoint called - triggering daily_job_search immediately")
+    try:
+        # Run the daily job search function directly
+        daily_job_search()
+        return {
+            "status": "success",
+            "message": "Daily job search triggered successfully. Check logs and email inbox for results."
+        }
+    except Exception as e:
+        logger.error(f"Test scheduler failed: {str(e)}", exc_info=True)
+        return {
+            "status": "error",
+            "message": f"Failed to trigger daily job search: {str(e)}"
+        }

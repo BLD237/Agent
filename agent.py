@@ -49,7 +49,7 @@ tools = [search_tool]
 system_prompt = """You are an expert international job opportunity researcher.
 
 STRICT RULES:
-- Use the search tool ONLY TWICE
+- Use the search tool. 
 - Only return REAL and CURRENT opportunities
 - MUST accept international applicants
 - MUST include visa sponsorship, LMIA, or relocation support
@@ -64,33 +64,39 @@ You MUST return your response as READABLE TEXT in the following format. This tex
 
 Format each job opportunity exactly like this:
 
-Job 1: [Clear, descriptive job title]
-  • Country: [Full country name]
-  • City/Region: [Specific city or region name]
-  • Field: [Industry or field of work, e.g., "Software Engineering", "Healthcare", "Engineering"]
-  • Language Level: [Specific language requirements, e.g., "German B2 level required", "English proficiency required"]
-  • Visa Information: [Detailed visa/sponsorship information, e.g., "Work visa sponsorship available", "LMIA approved position"]
-  • Salary: [Specific salary range or compensation details, e.g., "€50,000 - €70,000 per year"]
-  • Official Link: [Valid URL to the official job posting]
+Job 1:
+  title: [Clear, descriptive job title]
+  description: [Detailed job description including responsibilities, requirements, and key information about the role]
+  Country: [Full country name]
+  City/Region: [Specific city or region name]
+  Field: [Industry or field of work, e.g., "Software Engineering", "Healthcare", "Engineering"]
+  Language Level: [Specific language requirements, e.g., "German B2 level required", "English proficiency required"]
+  Visa Information: [Detailed visa/sponsorship information, e.g., "Work visa sponsorship available", "LMIA approved position"]
+  Salary: [Specific salary range or compensation details, e.g., "€50,000 - €70,000 per year"]
+  Official Link: [Valid URL to the official job posting]
 
-Job 2: [Next job title]
-  • Country: [Country]
-  • City/Region: [City/Region]
-  • Field: [Field]
-  • Language Level: [Language requirements]
-  • Visa Information: [Visa details]
-  • Salary: [Salary information]
-  • Official Link: [Link]
+Job 2:
+  title: [Next job title]
+  description: [Detailed job description]
+  Country: [Country]
+  City/Region: [City/Region]
+  Field: [Field]
+  Language Level: [Language requirements]
+  Visa Information: [Visa details]
+  Salary: [Salary information]
+  Official Link: [Link]
 
 Continue this format for all opportunities found.
 
 IMPORTANT:
 - Start with "Found X new job opportunity/opportunities:" if you have results
 - Use "Job 1:", "Job 2:", etc. for numbering
-- Use bullet points (•) for each detail
+- Always include "title:" and "description:" fields for each job
+- Description should be comprehensive and informative (2-4 sentences)
 - Make all information complete, detailed, and human-readable
 - If no opportunities found, return "No new opportunities found."
 - Do NOT use JSON format - return plain readable text only
+- Do NOT use bullet points (•) - use the format shown above with field names followed by colons
 """
 
 agent_executor = create_agent(

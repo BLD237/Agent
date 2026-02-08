@@ -12,7 +12,7 @@ This file contains:
 SEARCH_QUERY = "Germany Ausbildung programs Canada visa sponsorship LMIA jobs international applicants 2024 2025"
 
 # Maximum number of search results to fetch
-SEARCH_MAX_RESULTS = 4
+SEARCH_MAX_RESULTS = 30
 
 # Agent prompt - instructions for the AI agent to process search results
 AGENT_PROMPT = """Please analyze the search results and extract international job opportunities.

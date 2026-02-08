@@ -1,0 +1,25 @@
+[Unit]
+Description=International Job Opportunity AI Bot - FastAPI with Daily Scheduler
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/var/www/Agent
+Environment="PATH=/var/www/Agent/venv/bin"
+ExecStart=/var/www/Agent/venv/bin/python3 /var/www/Agent/run_server.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables (set these in /etc/environment or .env file)
+# Environment="GOOGLE_API_KEY=your-key"
+# Environment="SMTP_EMAIL=your-email@gmail.com"
+# Environment="SMTP_PASSWORD=your-password"
+# Environment="SMTP_HOST=smtp.gmail.com"
+# Environment="SMTP_PORT=587"
+
+[Install]
+WantedBy=multi-user.target
+

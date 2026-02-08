@@ -1,4 +1,3 @@
-import json
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -7,8 +6,6 @@ import pytz
 from agent import invoke_agent, preview_search
 from email_service import send_email
 from job_config import DAILY_JOB_CONFIG, AGENT_PROMPT, SEARCH_QUERY, SEARCH_MAX_RESULTS
-from utils import sanitize_for_json
-from db import opportunity_exists, save_opportunity
 
 logger = logging.getLogger("agent")
 
