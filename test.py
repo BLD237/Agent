@@ -76,8 +76,17 @@ def cmd_search(query):
         logger.info("✓ Agent analysis complete")
         print("\n🤖 Agent Analysis:")
         print("-" * 70)
+        # Handle both text and JSON output formats
         try:
-            print(json.dumps(sanitize_for_json(result), indent=2, ensure_ascii=False))
+            if isinstance(result, dict) and "output" in result:
+                # New text format
+                print(result["output"])
+            elif isinstance(result, str):
+                # Already text
+                print(result)
+            else:
+                # Try JSON format (backward compatibility)
+                print(json.dumps(sanitize_for_json(result), indent=2, ensure_ascii=False))
         except Exception:
             print(str(result))
         print("-" * 70)
@@ -206,24 +215,30 @@ def cmd_search_and_email(query, recipient_email):
         agent_result = invoke_agent(payload)
         logger.info("  ✓ Agent analysis complete")
         
-        # Step 4: Format for email
+        # Step 4: Get readable text from agent result
         logger.info("Step 4: Formatting email...")
-        email_body = {
-            "timestamp": datetime.now().isoformat(),
-            "query": query,
-            "results_count": len(summary),
-            "opportunities": sanitize_for_json(summary[:5]),
-            "analysis": sanitize_for_json(agent_result)
-        }
+        try:
+            if isinstance(agent_result, dict) and "output" in agent_result:
+                email_body = agent_result["output"]
+            elif isinstance(agent_result, str):
+                email_body = agent_result
+            else:
+                email_body = str(agent_result)
+            
+            # Add header with query info
+            email_body = f"Query: {query}\nResults found: {len(summary)}\n\n{email_body}"
+        except Exception as e:
+            logger.error(f"Failed to extract agent output: {e}")
+            email_body = str(agent_result)
         
-        email_subject = f"🎯 Funding Opportunities - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        email_subject = f"🎯 Job Opportunities - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
         
         # Step 5: Send email
         logger.info("Step 5: Sending email...")
         success = send_email(
             recipient=recipient_email,
             subject=email_subject,
-            body=json.dumps(email_body),
+            body=email_body,
             smtp_config=smtp_config
         )
         
@@ -256,7 +271,16 @@ def cmd_invoke_raw(payload_json):
         
         print("\n📤 Agent Response:")
         print("-" * 70)
-        print(result)
+        # Handle both text and JSON output formats
+        if isinstance(result, dict) and "output" in result:
+            # New text format
+            print(result["output"])
+        elif isinstance(result, str):
+            # Already text
+            print(result)
+        else:
+            # Other format
+            print(str(result))
         print("-" * 70)
         
     except json.JSONDecodeError as e:

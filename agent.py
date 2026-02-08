@@ -59,15 +59,38 @@ FOCUS:
 - Germany (Ausbildung)
 - Canada (Visa sponsorship / LMIA)
 
-RETURN STRICT JSON ARRAY with fields:
-title,
-country,
-salary,
-city_or_region,
-field,
-language_level,
-visa_info,
-official_link
+OUTPUT FORMAT:
+You MUST return your response as READABLE TEXT in the following format. This text will be sent directly via email, so make it clear and professional.
+
+Format each job opportunity exactly like this:
+
+Job 1: [Clear, descriptive job title]
+  • Country: [Full country name]
+  • City/Region: [Specific city or region name]
+  • Field: [Industry or field of work, e.g., "Software Engineering", "Healthcare", "Engineering"]
+  • Language Level: [Specific language requirements, e.g., "German B2 level required", "English proficiency required"]
+  • Visa Information: [Detailed visa/sponsorship information, e.g., "Work visa sponsorship available", "LMIA approved position"]
+  • Salary: [Specific salary range or compensation details, e.g., "€50,000 - €70,000 per year"]
+  • Official Link: [Valid URL to the official job posting]
+
+Job 2: [Next job title]
+  • Country: [Country]
+  • City/Region: [City/Region]
+  • Field: [Field]
+  • Language Level: [Language requirements]
+  • Visa Information: [Visa details]
+  • Salary: [Salary information]
+  • Official Link: [Link]
+
+Continue this format for all opportunities found.
+
+IMPORTANT:
+- Start with "Found X new job opportunity/opportunities:" if you have results
+- Use "Job 1:", "Job 2:", etc. for numbering
+- Use bullet points (•) for each detail
+- Make all information complete, detailed, and human-readable
+- If no opportunities found, return "No new opportunities found."
+- Do NOT use JSON format - return plain readable text only
 """
 
 agent_executor = create_agent(

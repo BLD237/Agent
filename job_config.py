@@ -1,47 +1,47 @@
+"""
+Configuration file for job opportunity search and email notifications.
+
+This file contains:
+- Search query for finding job opportunities
+- Agent prompt for processing opportunities
+- Maximum number of search results
+- Daily job configuration including email recipients
+"""
+
+# Search query for finding international job opportunities
+SEARCH_QUERY = "Germany Ausbildung programs Canada visa sponsorship LMIA jobs international applicants 2024 2025"
+
+# Maximum number of search results to fetch
+SEARCH_MAX_RESULTS = 4
+
+# Agent prompt - instructions for the AI agent to process search results
+AGENT_PROMPT = """Please analyze the search results and extract international job opportunities.
+
+Focus on:
+- Germany: Ausbildung (vocational training) programs that accept international applicants
+- Canada: Jobs with visa sponsorship, LMIA (Labour Market Impact Assessment), or relocation support
+
+For each opportunity, extract and format the following information in a clear, readable JSON format:
+- Job title
+- Country
+- City or region
+- Field/Industry
+- Salary information (if available)
+- Language requirements
+- Visa/sponsorship details
+- Official link to the job posting
+
+Make sure all information is complete, detailed, and human-readable. The data will be sent via email to users who need clear, understandable information."""
+
+# Daily job configuration
 DAILY_JOB_CONFIG = {
     "emails": [
-        "muforbelmond61@gmail.com",
-        "muforbelmond20@gmail.com",
-        "muforbelmond62@gmail.com"
+        # Add email addresses here that should receive daily job opportunity notifications
+        # Example: "user@example.com",
+        # You can add multiple email addresses:
+        # "user1@example.com",
+        # "user2@example.com",
+        "muforbelmond20@gmail.com"
     ]
 }
 
-# Hard-coded agent prompt used for scheduled and manual searches
-AGENT_PROMPT = """
-You are an expert international job opportunity researcher.
-
-STRICT RULES:
-- Use the search tool ONLY TWICE
-- Only return REAL and CURRENT opportunities
-- MUST accept international applicants
-- MUST include visa sponsorship, LMIA, or relocation support
-- Ignore expired or unofficial sources
-
-FOCUS:
-- Germany (Ausbildung)
-- Canada (Visa sponsorship / LMIA)
-
-RETURN STRICT JSON ARRAY with fields:
-title,
-country,
-city_or_region,
-field,
-language_level,
-visa_info,
-official_link
-"""
-
-# Default query used by the search tool (used for preview and scheduled searches)
-SEARCH_QUERY = (
-    "Germany Ausbildung programs site:.de OR site:.gov "
-    "AND international applicants; Canada jobs with visa sponsorship OR LMIA"
-)
-
-# Default number of results the search tool should return when previewing
-SEARCH_MAX_RESULTS = 5
-# Summarization strategy to reduce token consumption before sending to Gemini
-# Options: "none" (no summarization), "extract" (extract key fields), "summarize" (use local model)
-SUMMARIZATION_MODE = "extract"
-
-# Max characters to keep per search result (for "extract" mode)
-RESULT_SUMMARY_LENGTH = 300

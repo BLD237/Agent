@@ -33,32 +33,26 @@ def daily_job_search():
 
     result = invoke_agent(payload)
 
+    # Get the text output directly from the agent
     try:
-        opportunities = json.loads(result["output"])
-        logger.info("Parsed %d opportunities from agent output", len(opportunities))
+        if isinstance(result, dict) and "output" in result:
+            email_body = result["output"]
+        elif isinstance(result, str):
+            email_body = result
+        else:
+            email_body = str(result)
+        
+        # Check if we got meaningful content
+        if not email_body or email_body.strip() == "" or "No new opportunities" in email_body:
+            logger.info("No new opportunities found today")
+            return
+        
+        logger.info("Agent returned readable text format, sending directly to email")
     except Exception as e:
-        logger.error("Failed to parse agent output: %s", str(e))
+        logger.error("Failed to get agent output: %s", str(e))
         return
 
-    new_items = []
-
-    for opp in opportunities:
-        if not opportunity_exists(
-            opp["official_link"],
-            opp["title"],
-            opp["country"]
-        ):
-            save_opportunity(opp)
-            new_items.append(opp)
-
-    if not new_items:
-        logger.info("No new opportunities found today")
-        return
-
-    logger.info("Sending email with %d new opportunities", len(new_items))
-    safe_items = sanitize_for_json(new_items)
-    email_body = json.dumps(safe_items, indent=2, ensure_ascii=False)
-
+    # Send the readable text directly to email
     for email in DAILY_JOB_CONFIG["emails"]:
         send_email(
             subject="New Germany Ausbildung & Canada Visa Jobs",

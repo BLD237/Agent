@@ -64,48 +64,37 @@ def search_opportunities(data: JobRequest = Body(default=None)):
         logger.error("invoke_agent failed: %s", str(e))
         raise
 
-    # Normalize/parse agent output safely
+    # Get the readable text output directly from the agent
     try:
         if isinstance(result, dict) and "output" in result:
-            raw = result["output"]
-            if isinstance(raw, str):
-                opportunities = json.loads(raw)
-            else:
-                opportunities = sanitize_for_json(raw)
+            email_body = result["output"]
         elif isinstance(result, str):
-            opportunities = json.loads(result)
+            email_body = result
         else:
-            opportunities = sanitize_for_json(result)
+            email_body = str(result)
+        
+        logger.info("Agent returned readable text format")
     except Exception as e:
-        logger.error("Failed to parse or sanitize agent output: %s", str(e))
+        logger.error("Failed to get agent output: %s", str(e))
         raise
-    # Log titles and some metadata for visibility
-    for i, opp in enumerate(opportunities[:10], start=1):
-        title = opp.get("title") or opp.get("job_title") or "(no title)"
-        logger.info("Opportunity %d: %s | %s | %s", i, title, opp.get("country"), opp.get("official_link"))
-    new_items = []
-
-    for opp in opportunities:
-        if not opportunity_exists(
-            opp["official_link"],
-            opp["title"],
-            opp["country"]
-        ):
-            save_opportunity(opp)
-            new_items.append(opp)
 
     email = data.email if data else None
 
-    if email and new_items:
+    # Send the readable text directly to email if provided
+    if email and email_body and email_body.strip() and "No new opportunities" not in email_body:
         send_email(
             subject="New International Job Opportunities",
-            body=json.dumps(new_items, indent=2),
+            body=email_body,
             to_email=email
         )
 
+    # Count opportunities from the text (simple count of "Job X:" patterns)
+    opportunity_count = email_body.count("Job ") if email_body else 0
+
     return {
-        "new_results": new_items,
-        "count": len(new_items)
+        "output": email_body,
+        "count": opportunity_count,
+        "format": "readable_text"
     }
 
 
